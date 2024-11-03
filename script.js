@@ -2,15 +2,24 @@ const trainingObjectiveSelect = document.getElementById('trainingObjective');
 const specificArgsDiv = document.getElementById('specificArgs');
 const algorithmSelect = document.getElementById('algorithmSelect');
 
+//Para regresion lineal
 let xTrain = [];
 let yTrain = [];
+let xpredict=[]
 var yPredict;
+var linear;
+//para arbol
+let dTree;
+let root;
+let arregloArbol = [];
+let arbolTrain = [];
+let dotStr;
+let predictNode;
+//
 
 algorithmSelect.addEventListener('change', function () {
     const algorithm = algorithmSelect.value;
     specificArgsDiv.innerHTML = '';
-
-    //const objective = this.value;
 
     if (algorithm==='linearRegression'){
         specificArgsDiv.innerHTML = `
@@ -20,8 +29,11 @@ algorithmSelect.addEventListener('change', function () {
     }else if(algorithm==='decisionTree'){
         specificArgsDiv.innerHTML = `
             <label for="predecirDato">Ingrese nuevos datos para predecir</label>
-            <input type="text" id="predecirDato" placeholder="Ingrese nuevas clases para predecir separado por comas(clase1,clase2,clase3,...)">
-            <button id="agregarDatos">Agregar</button>
+            <input type="text" id="predecirDato" placeholder="Ingrese nuevas clases para predecir separado por comas (clase1,clase2,clase3,...)">
+            <button id="agregarDatos" onclick="addToArray()">Agregar</button>
+            <p id="mensaje"></p>
+            <p>Datos a predecir: <span id="arrayDisplay">[]</span></p>
+            <br />
         `;
     }else if(algorithm==='naiveBayes'){
         specificArgsDiv.innerHTML = `
@@ -43,48 +55,62 @@ algorithmSelect.addEventListener('change', function () {
             </select>
         `;
     }
-    /*
-    if (objective === 'prediction') {
-        specificArgsDiv.innerHTML = `
-            <label for="xRange">New Range on X-Axis:</label>
-            <input type="text" id="xRange" placeholder="Enter range (e.g., 0-100)">
-        `;
-    } else if (objective === 'classification') {
-        specificArgsDiv.innerHTML = `
-            <label for="numClasses">Number of Classes:</label>
-            <input type="number" id="numClasses" min="2" placeholder="Enter number of classes">
-        `;
-    } else if (objective === 'trends' || objective === 'patterns') {
-        specificArgsDiv.innerHTML = `
-            <label for="modelArgs">Model Specific Arguments:</label>
-            <input type="text" id="modelArgs" placeholder="Enter model arguments">
-        `;
-    }
-        */
 });
 
 
 document.getElementById('trainButton').addEventListener('click', function () {
     const fileInput = document.getElementById('fileInput').files[0];
-    const trainPercentage = document.getElementById('trainPercentage').value;
     const algorithm = algorithmSelect.value;
-
+    xTrain=[];
+    yTrain=[];
     if (fileInput) {
         const reader = new FileReader();
         reader.onload = function (event) {
             const content = event.target.result;
-            parseCSV(content);
             if (algorithm === 'linearRegression') {
+                parseCSVLR(content);
                 trainLinearRegression();
+            }else if(algorithm==='decisionTree'){
+                parseCSVAD(content);
+                //console.log(arbolTrain);
+                trainDecisionTree();
             }
         };
         reader.readAsText(fileInput);
     } else {
-        alert("Please select a CSV file.");
+        alert("Por favor seleccione un archivo CSV.");
     }
 });
 
-function parseCSV(content) {
+document.getElementById('predictButton').addEventListener('click', function () {
+    const algorithm = algorithmSelect.value;
+    xpredict=[];
+    if (algorithm === 'linearRegression') {
+        if (xTrain.length === 0 || yTrain.length === 0) {
+            alert("Por favor entrena el modelo primero");
+        }else{
+            const xRangeInput = document.getElementById("xRange").value;
+            if (xRangeInput === "") {
+                alert("El campo de rango a predecir esta vacio")
+            } else {
+                const numbers = xRangeInput.split(",").map(num => Number(num.trim()));
+                xpredict.push(...numbers);
+                predictLinearRegression();
+            }
+        }
+        
+    }else if (algorithm === 'decisionTree'){
+        if(arregloArbol.length===0 || arregloArbol===1){
+            alert("Por favor ingresa valores para predecir el arbol, los primeros datos son el encabezado");    
+        }else{
+            predictDecisionTree();
+        }
+    }
+
+});
+
+//FUNCIONES PARA LEER LOS ARCHIVOS CSV DE CADA ALGORITMO
+function parseCSVLR(content) {
     const lines = content.split('\n');
     for (let i = 1; i < lines.length; i++) { // Skip header
         const [x, y] = lines[i].split(';').map(Number);
@@ -94,27 +120,62 @@ function parseCSV(content) {
         }
     }
 }
+function parseCSVAD(content) {
+    const lines = content.split('\n');
+    for (let i = 1; i < lines.length; i++) {
+        const arreglonuevo = lines[i].split(',').map(value => value.trim());
+        arbolTrain.push(arreglonuevo);
+    }
+}
 
+//FUNCIONESL PARA EL ENTRENAMIENTO DE CADA ALGRITMO
 function trainLinearRegression() {
-    var linear = new LinearRegression();
+    linear = new LinearRegression();
     linear.fit(xTrain, yTrain);
-    yPredict = linear.predict(xTrain);
 
-    // Log the results
+    document.getElementById("log").innerHTML = `
+        <br>X Train: ${xTrain}<br>
+        Y Train: ${yTrain}<br>
+    `;
+
+}
+function trainDecisionTree() {
+    dTree = new DecisionTreeID3(arbolTrain);
+    root = dTree.train(dTree.dataset);
+
+    document.getElementById("log").innerHTML = `
+        <br>Datos para arbol entrenado: <br>
+        <span id="arregloEntrenado"></span>
+    `;
+    document.getElementById("arregloEntrenado").textContent= JSON.stringify(arbolTrain);
+
+}
+
+
+//FUNCIONES PARA PREDICCION DE CADA ALGORITMO
+function predictLinearRegression() {
+    yPredict = linear.predict(xpredict);
     document.getElementById("log").innerHTML = `
         <br>X Train: ${xTrain}<br>
         Y Train: ${yTrain}<br>
         Y Predict: ${yPredict}
     `;
 
-    // Prepare data for Google Charts
-    var a = joinArrays('x', xTrain, 'yTrain', yTrain, 'yPredict', yPredict);
-
-    // Load Google Charts and draw the chart
-    //google.charts.load('current', { 'packages': ['corechart'] });
-    //google.charts.setOnLoadCallback(() => drawChart(a));
 }
 
+function predictDecisionTree() {
+    let predict =dTree.predict(arregloArbol, root);
+    dotStr=dTree.generateDotString(root);
+    predictNode= predict;
+
+    document.getElementById("log2").innerHTML = `
+        <br>Datos para prediccion para arbol entrenado: <br>
+        <span id="arregloPrediccion"></span>
+    `;
+    document.getElementById("arregloPrediccion").textContent= JSON.stringify(arregloArbol);
+}
+
+//LAS DEMAS FUNCIONES PARA GRAFICAS Y OPERACIONES
 function drawChart(dataArray) {
     var data = google.visualization.arrayToDataTable(dataArray);
     var options = {
@@ -125,6 +186,30 @@ function drawChart(dataArray) {
     var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
     chart.draw(data, options);
 }
+
+function drawChartAD() {
+    var parsDot = vis.network.convertDot(dotStr);
+    var data = {
+        nodes: parsDot.nodes,
+        edges: parsDot.edges
+    }
+
+    var chart =document.getElementById('chart_div');
+    var options = {
+        layout: {
+            hierarchical: {
+                levelSeparation: 100,
+                nodeSpacing: 100,
+                parentCentralization: true,
+                direction: 'UD',
+                sortMethod: 'directed',                    
+            },
+        },
+    };
+    var network = new vis.Network(chart, data, options);
+}
+
+
 function joinArrays(labelX, xArray, labelY, yArray, labelYPred, yPredArray) {
     var result = [[labelX, labelY, labelYPred]];
     for (var i = 0; i < xArray.length; i++) {
@@ -138,7 +223,7 @@ document.getElementById('showGraphsButton').addEventListener('click', function (
 
     if (algorithm === 'linearRegression') {
         if (xTrain.length === 0 || yTrain.length === 0) {
-            alert("Please train the model first by uploading a CSV file and clicking 'Train Model'.");
+            alert("Por favor entrena y predice el modelo primero");
         } else {
     
             // Prepare data for Google Charts
@@ -148,7 +233,30 @@ document.getElementById('showGraphsButton').addEventListener('click', function (
             google.charts.load('current', { 'packages': ['corechart'] });
             google.charts.setOnLoadCallback(() => drawChart(chartData));
         }
+    }else if(algorithm === 'decisionTree'){
+        if(arregloArbol.length===0 || arregloArbol===1){
+            alert("Por favor ingresa valores para mostrar el arbol");    
+        }else{
+            drawChartAD();
+        }
     }
 
     
 });
+
+function addToArray() {
+    const datosArbol = document.getElementById("predecirDato").value;
+    const message = document.getElementById("mensaje");
+    if(datosArbol===""){
+        message.textContent="Esta vacio"
+    }else{
+        const valoresarbol = datosArbol.split(",").map(num => String(num.trim()));
+        let arregloaux = [];
+        arregloaux.push(...valoresarbol);
+        arregloArbol.push(arregloaux);
+        message.textContent=""
+        console.log(arregloArbol)
+        document.getElementById("arrayDisplay").textContent= JSON.stringify(arregloArbol);
+    }
+    document.getElementById("predecirDato").value="";
+}
