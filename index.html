@@ -13,11 +13,11 @@
 
 <h1>Proyecto 2</h1>
 
-<!-- File Selector -->
+
 <label for="fileInput">Selecciona Archivo de entrada (csv):</label>
 <input type="file" id="fileInput" accept=".csv">
 
-<!-- Algorithm Selector -->
+
 <label for="algorithmSelect">Selecciona Algoritmo de Machine Learning:</label>
 <select id="algorithmSelect">
     <option value="linearRegression">Regresion Lineal</option>
@@ -25,28 +25,14 @@
     <option value="naiveBayes">Naive Bayes</option>
 </select>
 
-<!-- Parameter Inputs -->
-<!--
-<label for="trainPercentage">Training Data Percentage:</label>
-<input type="number" id="trainPercentage" value="80" min="0" max="100">
-
-<label for="trainingObjective">Training Objective:</label>
-<select id="trainingObjective">
-    <option value="trends">Trends</option>
-    <option value="patterns">Patterns</option>
-    <option value="classification">Classification</option>
-    <option value="prediction">Prediction</option>
-</select>
--->
 
 <div id="specificArgs"></div>
 <br />
-<!-- Buttons -->
+
 <button id="trainButton">Entrenamiento</button>
 <button id="predictButton">Predicción</button>
 <button id="showGraphsButton">Mostrar gráficas</button>
 
-<!-- Log and Chart Div -->
 <p id="log"></p>   
 <p id="log2"></p>    
 <div id="chart_div" style="width: 900px; height: 500px;"></div>

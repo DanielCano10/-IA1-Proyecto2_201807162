@@ -15,7 +15,14 @@ let arregloArbol = [];
 let arbolTrain = [];
 let dotStr;
 let predictNode;
-//
+//para naive bayes
+var naive;
+var nombres=[];
+var cli=[];
+var tem=[];
+var hum=[];
+var vie=[];
+var jue=[];
 
 algorithmSelect.addEventListener('change', function () {
     const algorithm = algorithmSelect.value;
@@ -53,6 +60,28 @@ algorithmSelect.addEventListener('change', function () {
                 <option value="nublado">nublado</option>
                 <option value="lluvioso">lluvioso</option>
             </select>
+            <label for="datoTemperatura">temperatura:</label>
+            <select id="datoTemperatura">
+                <option value="calor">calor</option>
+                <option value="templado">templado</option>
+                <option value="frio">frio</option>
+            </select>
+            <label for="datoHumedad">humedad:</label>
+            <select id="datoHumedad">
+                <option value="alta">alta</option>
+                <option value="normal">normal</option>
+            </select>
+            <label for="datoViento">viento:</label>
+            <select id="datoViento">
+                <option value="no">no</option>
+                <option value="si">si</option>
+            </select>
+            <label for="datoJuega">juega:</label>
+            <select id="datoJuega">
+                <option value="no">no</option>
+                <option value="si">si</option>
+            </select>
+            
         `;
     }
 });
@@ -74,7 +103,11 @@ document.getElementById('trainButton').addEventListener('click', function () {
                 parseCSVAD(content);
                 //console.log(arbolTrain);
                 trainDecisionTree();
+            }else if(algorithm==='naiveBayes'){
+                parseCSVNB(content);
+                trainNaives();
             }
+            
         };
         reader.readAsText(fileInput);
     } else {
@@ -106,6 +139,13 @@ document.getElementById('predictButton').addEventListener('click', function () {
             predictDecisionTree();
         }
     }
+    else if (algorithm === 'naiveBayes'){
+        if(nombres.length===0){
+            alert("Por favor ingresa valores para predecir , los primeros datos son el encabezado");    
+        }else{
+            predictNaives();
+        }
+    }
 
 });
 
@@ -125,6 +165,19 @@ function parseCSVAD(content) {
     for (let i = 1; i < lines.length; i++) {
         const arreglonuevo = lines[i].split(',').map(value => value.trim());
         arbolTrain.push(arreglonuevo);
+    }
+}
+
+function parseCSVNB(content) {
+    const lines = content.split('\n');
+    nombres = lines[0].split(',').map(value => value.trim());
+    for (let i = 1; i < lines.length; i++) {
+        const arreglonb = lines[i].split(',').map(value => value.trim());
+        cli.push(arreglonb[0]);
+        tem.push(arreglonb[1]);
+        hum.push(arreglonb[2])
+        vie.push(arreglonb[3])
+        jue.push(arreglonb[4])
     }
 }
 
@@ -151,6 +204,33 @@ function trainDecisionTree() {
 
 }
 
+function trainLinearRegression() {
+    linear = new LinearRegression();
+    linear.fit(xTrain, yTrain);
+
+    document.getElementById("log").innerHTML = `
+        <br>X Train: ${xTrain}<br>
+        Y Train: ${yTrain}<br>
+    `;
+
+}
+function trainNaives() {
+    naive = new NaiveBayes();
+    naive.insertCause(nombres[0], cli);
+    naive.insertCause(nombres[1], tem);
+    naive.insertCause(nombres[2], hum);
+    naive.insertCause(nombres[3], vie);
+    naive.insertCause(nombres[4], jue);
+
+    let arregloentrenadonb=[nombres,cli,tem,hum,vie,jue]
+    document.getElementById("log").innerHTML = `
+        <br>Datos para naives: <br>
+        <span id="arregloNB"></span>
+    `;
+    document.getElementById("arregloNB").textContent= JSON.stringify(arregloentrenadonb);
+
+}
+
 
 //FUNCIONES PARA PREDICCION DE CADA ALGORITMO
 function predictLinearRegression() {
@@ -173,6 +253,23 @@ function predictDecisionTree() {
         <span id="arregloPrediccion"></span>
     `;
     document.getElementById("arregloPrediccion").textContent= JSON.stringify(arregloArbol);
+}
+
+function predictNaives() {
+    var effect = document.getElementById("objetivoPrediccion").value;
+    let my_causes = [];
+    my_causes.push(["clima",document.getElementById('datoClima').value])
+    my_causes.push(["temperatura",document.getElementById('datoTemperatura').value])
+    my_causes.push(["humedad",document.getElementById('datoHumedad').value])
+    my_causes.push(["viento",document.getElementById('datoViento').value])
+    my_causes.push(["juega",document.getElementById('datoJuega').value])
+
+    var predictionnb = naive.predict(effect, my_causes);
+
+    document.getElementById("log2").innerHTML = `
+        <br>Datos resultados de prediccion: <br>
+        <span id="predict_result">`+predictionnb[0] + " " + predictionnb[1]+`</span>
+    `;
 }
 
 //LAS DEMAS FUNCIONES PARA GRAFICAS Y OPERACIONES
